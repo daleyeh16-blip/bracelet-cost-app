@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#A66E78">
+<title>手鏈成本計算器</title>
+<style>
+:root{--bg:#fbf7f5;--card:#fff;--ink:#3b3234;--muted:#817477;--line:#eadfe1;--brand:#a66e78;--soft:#f2e4e7}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;z-index:10;background:rgba(251,247,245,.95);backdrop-filter:blur(12px);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid var(--line)}
+header h1{font-size:21px;margin:0}header p{font-size:12px;color:var(--muted);margin:4px 0 0}
+main{max-width:820px;margin:auto;padding:14px 14px 100px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.tabs button{border:0;border-radius:12px;padding:11px;background:#fff;color:var(--muted);font-weight:700}.tabs button.active{background:var(--brand);color:#fff}
+.page{display:none}.page.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 5px 18px rgba(74,48,55,.05)}
+h2{font-size:18px;margin:0 0 12px}label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+input,select,button{width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;color:var(--ink)}button{font-weight:700;cursor:pointer}.primary{background:var(--brand);color:#fff;border-color:var(--brand)}.soft{background:var(--soft);border-color:var(--soft)}.danger{color:#9c525e}.actions{display:flex;gap:8px;margin-top:12px}
+.list{display:grid;gap:9px}.item{border:1px solid var(--line);border-radius:13px;padding:12px}.item-top{display:flex;justify-content:space-between;gap:10px}.item-title{font-weight:800}.meta{font-size:12px;color:var(--muted);line-height:1.6}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--soft);font-size:11px;color:#815862}
+.result{background:#f8ecef;border:1px solid #ead5da;border-radius:14px;padding:14px}.result strong{font-size:30px;color:var(--brand)}.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.summary .box{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}.summary .box span{font-size:12px;color:var(--muted)}.summary .box b{display:block;font-size:22px;margin-top:4px}.small{font-size:12px;color:var(--muted);line-height:1.6}.empty{text-align:center;padding:24px;color:var(--muted)}.hidden{display:none!important}
+@media(max-width:620px){.grid,.summary{grid-template-columns:1fr}.tabs{position:fixed;z-index:20;bottom:0;left:0;right:0;margin:0;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);border-top:1px solid var(--line)}main{padding-bottom:105px}}
+</style>
+</head>
+<body>
+<header><h1>📿 手鏈成本計算器</h1><p>材料先建檔，製作時直接選用</p></header>
+<main>
+<div class="tabs"><button class="active" data-page="calc">成本計算</button><button data-page="materials">材料庫</button></div>
+<section id="calc" class="page active">
+ <div class="card"><h2>這條手鏈用了哪些材料？</h2><div id="recipeRows"></div><button class="soft" onclick="addRecipeRow()">＋加入材料</button></div>
+ <div class="card"><h2>製作與定價</h2><div class="grid">
+  <div><label>製作時間（分鐘）</label><input id="minutes" type="number" value="30"></div>
+  <div><label>每小時工資（元）</label><input id="hourly" type="number" value="200"></div>
+  <div><label>包裝成本（元）</label><input id="packaging" type="number" value="15"></div>
+  <div><label>其他成本（元）</label><input id="other" type="number" value="0"></div>
+  <div><label>材料損耗率（%）</label><input id="waste" type="number" value="5"></div>
+  <div><label>期望利潤率（%）</label><input id="profit" type="number" value="40"></div>
+  <div><label>平台／金流抽成（%）</label><input id="fee" type="number" value="0"></div>
+  <div><label>售價進位</label><select id="round"><option value="1">不進位</option><option value="5">5元</option><option value="10" selected>10元</option><option value="50">50元</option><option value="100">100元</option></select></div>
+ </div></div>
+ <div class="card"><h2>計算結果</h2><div class="summary">
+  <div class="box"><span>材料成本</span><b id="rMaterial">$0</b></div><div class="box"><span>人工成本</span><b id="rLabor">$0</b></div>
+  <div class="box"><span>總成本</span><b id="rTotal">$0</b></div><div class="box"><span>預估淨利</span><b id="rNet">$0</b></div>
+ </div><div class="result" style="margin-top:10px"><span class="small">建議售價</span><br><strong id="rSale">$0</strong><p id="breakdown" class="small"></p></div></div>
+</section>
+<section id="materials" class="page">
+ <div class="card"><div class="item-top"><h2>材料資料庫</h2><button class="primary" style="width:auto" onclick="openMaterialForm()">＋新增材料</button></div><p class="small">材料只要輸入一次，系統會自動換算每顆、每個或每公分的成本。</p><div id="materialList" class="list"></div></div>
+ <div id="materialForm" class="card hidden"><h2 id="materialFormTitle">新增材料</h2><div class="grid">
+  <div><label>材料名稱</label><input id="mName" placeholder="例：白水晶 8mm"></div>
+  <div><label>分類</label><select id="mCategory"><option>水晶</option><option>珍珠</option><option>線材</option><option>吊飾</option><option>金屬配件</option><option>包裝</option><option>其他</option></select></div>
+  <div><label>購入價格（元）</label><input id="mPrice" type="number" min="0"></div>
+  <div><label>購入數量</label><input id="mQty" type="number" min="0" step="0.01"></div>
+  <div><label>數量單位</label><select id="mUnit"><option>顆</option><option>個</option><option>公分</option><option>公尺</option><option>包</option><option>組</option></select></div>
+ </div><div class="actions"><button class="primary" onclick="saveMaterial()">儲存</button><button onclick="closeMaterialForm()">取消</button></div></div>
+</section>
+</main>
+<script>
+const KEY='bracelet_cost_simple_v1';let materials=JSON.parse(localStorage.getItem(KEY)||'[]');let editId=null;const $=id=>document.getElementById(id),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6),money=n=>'$'+Math.round(Number(n||0)).toLocaleString('zh-TW');
+function persist(){localStorage.setItem(KEY,JSON.stringify(materials));renderMaterials();refreshRecipeOptions();calculate()}
+function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.page===id))}document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>go(b.dataset.page));
+function openMaterialForm(m){editId=m?.id||null;$('materialForm').classList.remove('hidden');$('materialFormTitle').textContent=m?'編輯材料':'新增材料';$('mName').value=m?.name||'';$('mCategory').value=m?.category||'水晶';$('mPrice').value=m?.price??'';$('mQty').value=m?.qty??'';$('mUnit').value=m?.unit||'顆'}function closeMaterialForm(){$('materialForm').classList.add('hidden')}
+function saveMaterial(){const m={id:editId||uid(),name:$('mName').value.trim(),category:$('mCategory').value,price:+$('mPrice').value||0,qty:+$('mQty').value||0,unit:$('mUnit').value};if(!m.name)return alert('請輸入材料名稱');if(!m.qty)return alert('請輸入購入數量');const i=materials.findIndex(x=>x.id===m.id);i>=0?materials[i]=m:materials.push(m);closeMaterialForm();persist()}
+function delMaterial(id){if(confirm('確定刪除此材料？')){materials=materials.filter(x=>x.id!==id);persist()}}
+function renderMaterials(){$('materialList').innerHTML=materials.length?materials.map(m=>`<div class="item"><div class="item-top"><div><div class="item-title">${m.name}</div><div class="meta">${m.category}｜${m.price}元／${m.qty}${m.unit}<br>單位成本：${money(m.price/m.qty)}／${m.unit}</div></div><div><button onclick='openMaterialForm(${JSON.stringify(m)})'>編輯</button><button class="danger" onclick="delMaterial('${m.id}')">刪除</button></div></div></div>`).join(''):'<div class="empty">尚未建立材料</div>'}
+function addRecipeRow(r={}){const d=document.createElement('div');d.className='grid recipe';d.style.marginBottom='8px';d.innerHTML=`<div><select class="mat"><option value="">選擇材料</option>${materials.map(m=>`<option value="${m.id}" ${r.id===m.id?'selected':''}>${m.name}</option>`).join('')}</select></div><div style="display:flex;gap:6px"><input class="used" type="number" step="0.01" placeholder="使用量"><button class="danger" style="width:auto" onclick="this.parentElement.parentElement.remove();calculate()">刪除</button></div>`;d.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',calculate));$('recipeRows').appendChild(d);calculate()}
+function refreshRecipeOptions(){document.querySelectorAll('.recipe .mat').forEach(sel=>{const v=sel.value;sel.innerHTML='<option value="">選擇材料</option>'+materials.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');sel.value=v})}
+function calculate(){let material=0;document.querySelectorAll('.recipe').forEach(r=>{const m=materials.find(x=>x.id===r.querySelector('.mat').value),used=+r.querySelector('.used').value||0;if(m&&m.qty)material+=m.price/m.qty*used});const labor=(+$('minutes').value||0)/60*(+$('hourly').value||0),waste=material*(+$('waste').value||0)/100,total=material+waste+labor+(+$('packaging').value||0)+(+$('other').value||0),target=total*(1+(+$('profit').value||0)/100),fee=Math.min((+$('fee').value||0)/100,.99),raw=target/(1-fee),round=+$('round').value||1,sale=Math.ceil(raw/round)*round,net=sale-sale*fee-total;$('rMaterial').textContent=money(material);$('rLabor').textContent=money(labor);$('rTotal').textContent=money(total);$('rSale').textContent=money(sale);$('rNet').textContent=money(net);$('breakdown').textContent=`材料 ${money(material)}＋損耗 ${money(waste)}＋人工 ${money(labor)}＋包裝及其他 ${money((+$('packaging').value||0)+(+$('other').value||0))}＝總成本 ${money(total)}。`}
+['minutes','hourly','packaging','other','waste','profit','fee','round'].forEach(id=>$(id).addEventListener('input',calculate));renderMaterials();addRecipeRow();calculate();
+</script>
+</body></html>
